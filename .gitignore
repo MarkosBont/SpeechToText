@@ -3,3 +3,4 @@ corrections.json.lock
 __pycache__/
 *.pyc
 .env
+.idea/

@@ -1,10 +1,9 @@
 import streamlit as st
 import tempfile
 import os
-import json
 import time
 from datetime import datetime
-from filelock import FileLock
+from supabase import create_client
 from audiorecorder import audiorecorder
 from call import openai_call
 from openai import OpenAI
@@ -12,23 +11,18 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
-# ── Corrections store ─────────────────────────────────────────────────────────
-CORRECTIONS_FILE = "corrections.json"
-CORRECTIONS_LOCK = "corrections.json.lock"
+# ── Supabase ──────────────────────────────────────────────────────────────────
+supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_API_KEY"))
 
 def load_corrections() -> dict:
-    if not os.path.exists(CORRECTIONS_FILE):
-        return {}
-    with FileLock(CORRECTIONS_LOCK):
-        with open(CORRECTIONS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+    response = supabase.table("Corrections").select("wrong, correct").execute()
+    return {row["wrong"]: row["correct"] for row in response.data}
 
-def save_corrections(corrections: dict):
-    with FileLock(CORRECTIONS_LOCK):
-        with open(CORRECTIONS_FILE, "w", encoding="utf-8") as f:
-            json.dump(corrections, f, ensure_ascii=False, indent=2)
+def save_correction(wrong: str, correct: str):
+    supabase.table("Corrections").upsert({"wrong": wrong, "correct": correct}).execute()
 
+def delete_correction(wrong: str):
+    supabase.table("Corrections").delete().eq("wrong", wrong).execute()
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(page_title="Speech to Text", page_icon="🎙️", layout="centered")
@@ -43,6 +37,8 @@ if "prev_duration" not in st.session_state:
     st.session_state.prev_duration = 0
 if "correction_msg" not in st.session_state:
     st.session_state.correction_msg = None
+if "input_key" not in st.session_state:
+    st.session_state.input_key = 0
 
 # ── Progress helper ───────────────────────────────────────────────────────────
 def advance_progress(progress_bar, current: int, target: int, step_delay: float = 0.02):
@@ -137,7 +133,6 @@ if len(audio) > 0:
         st.session_state.last_status     = status
 
         if status != "error":
-            corrections = load_corrections()
             polished_transcript, current = polish(transcript, progress_bar, status_text, current)
             st.session_state.last_polished = polished_transcript
             advance_progress(progress_bar, current, 100)
@@ -171,33 +166,33 @@ st.divider()
 # ── Corrections manager ───────────────────────────────────────────────────────
 corrections = load_corrections()
 
-
-st.markdown("**Add a Correction:**")
+st.subheader("Add a Correction")
 col_a, col_b, col_c = st.columns([2, 2, 1])
-wrong_word   = col_a.text_input("Wrong word",   key="new_wrong",   label_visibility="collapsed", placeholder="Wrong word")
-correct_word = col_b.text_input("Correct word", key="new_correct", label_visibility="collapsed", placeholder="Correct word")
+wrong_word   = col_a.text_input("Wrong word",   key=f"new_wrong_{st.session_state.input_key}",   label_visibility="collapsed", placeholder="Wrong word")
+correct_word = col_b.text_input("Correct word", key=f"new_correct_{st.session_state.input_key}", label_visibility="collapsed", placeholder="Correct word")
+
 if col_c.button("Add"):
     if wrong_word.strip() and correct_word.strip():
-        corrections[wrong_word.strip()] = correct_word.strip()
-        save_corrections(corrections)
+        save_correction(wrong_word.strip(), correct_word.strip())
         st.session_state.correction_msg = f"Added: '{wrong_word}' → '{correct_word}'"
+        st.session_state.input_key += 1
         st.rerun()
     else:
         st.warning("Both fields must be filled.")
 
-st.markdown("**Existing Corrections**")
+st.divider()
+
+st.subheader("Existing Corrections")
 if corrections:
     col_h1, col_h2, col_h3 = st.columns([2, 2, 1])
     col_h1.markdown("**Wrong**")
     col_h2.markdown("**Correct**")
-    col_h3.markdown("**Remove**")
     for wrong, correct in list(corrections.items()):
         c1, c2, c3 = st.columns([2, 2, 1])
         c1.write(wrong)
         c2.write(correct)
-        if c3.button("🗑", key=f"del_{wrong}"):
-            del corrections[wrong]
-            save_corrections(corrections)
+        if c3.button("DELETE", key=f"del_{wrong}"):
+            delete_correction(wrong)
             st.session_state.correction_msg = f"Removed: '{wrong}'"
             st.rerun()
 else:

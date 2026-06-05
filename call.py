@@ -1,23 +1,19 @@
 from openai import OpenAI
-from filelock import FileLock
+from supabase import create_client
 import os
 import json
 from dotenv import load_dotenv
 
 load_dotenv()
 
-
 key = os.getenv("OPENAI_MED_API_KEY")
 client = OpenAI(api_key=key)
-CORRECTIONS_FILE = "corrections.json"
-CORRECTIONS_LOCK = "corrections.json.lock"
+
+supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_API_KEY"))
 
 def load_corrections() -> dict:
-    if not os.path.exists(CORRECTIONS_FILE):
-        return {}
-    with FileLock(CORRECTIONS_LOCK):
-        with open(CORRECTIONS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+    response = supabase.table("Corrections").select("wrong, correct").execute()
+    return {row["wrong"]: row["correct"] for row in response.data}
 
 
 
