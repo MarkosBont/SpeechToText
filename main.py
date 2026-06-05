@@ -152,7 +152,7 @@ if st.session_state.last_status is not None:
     if status == "ok":
         line_count = polished.count('\n') + 1
         height = max(100, line_count * 25)
-        st.text_area(label="", value=polished, height=height)
+        st.text_area(label="Transcription", label_visibility='collapsed', value=polished, height=height)
         st.download_button(
             "⬇ Download .txt",
             data=polished,
