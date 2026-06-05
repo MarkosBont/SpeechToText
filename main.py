@@ -1,5 +1,4 @@
 import streamlit as st
-import whisper
 import tempfile
 import os
 import json
@@ -8,6 +7,11 @@ from datetime import datetime
 from filelock import FileLock
 from audiorecorder import audiorecorder
 from call import openai_call
+from openai import OpenAI
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 # ── Corrections store ─────────────────────────────────────────────────────────
 CORRECTIONS_FILE = "corrections.json"
@@ -25,10 +29,6 @@ def save_corrections(corrections: dict):
         with open(CORRECTIONS_FILE, "w", encoding="utf-8") as f:
             json.dump(corrections, f, ensure_ascii=False, indent=2)
 
-# ── Whisper model ─────────────────────────────────────────────────────────────
-@st.cache_resource()
-def load_model():
-    return whisper.load_model("medium")
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(page_title="Speech to Text", page_icon="🎙️", layout="centered")
@@ -52,13 +52,14 @@ def advance_progress(progress_bar, current: int, target: int, step_delay: float 
     return target
 
 # ── Core functions ────────────────────────────────────────────────────────────
+client = OpenAI(api_key=os.getenv("OPENAI_MED_API_KEY"))
+
 def transcribe(audio_bytes: bytes, progress_bar, status_text):
     try:
         current = 0
         status_text.markdown("**⚙ Προετοιμασία αρχείου…**")
         current = advance_progress(progress_bar, current, 10)
 
-        model = load_model()
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
             tmp.write(audio_bytes)
             tmp_path = tmp.name
@@ -66,9 +67,14 @@ def transcribe(audio_bytes: bytes, progress_bar, status_text):
         status_text.markdown("**Μεταγραφή ομιλίας...**")
         current = advance_progress(progress_bar, current, 30)
 
-        result = model.transcribe(tmp_path, language="el", task="transcribe")
+        with open(tmp_path, "rb") as audio_file:
+            result = client.audio.transcriptions.create(
+                model="whisper-1",
+                file=audio_file,
+                language="el"
+            )
         os.unlink(tmp_path)
-        text = result["text"].strip()
+        text = result.text.strip()
 
         status_text.markdown("**Μεταγραφή ολοκληρώθηκε.**")
         current = advance_progress(progress_bar, current, 60)

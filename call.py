@@ -2,8 +2,13 @@ from openai import OpenAI
 from filelock import FileLock
 import os
 import json
+from dotenv import load_dotenv
 
-client = OpenAI(api_key=os.getenv("OPENAI_MED_API_KEY"))
+load_dotenv()
+
+
+key = os.getenv("OPENAI_MED_API_KEY")
+client = OpenAI(api_key=key)
 CORRECTIONS_FILE = "corrections.json"
 CORRECTIONS_LOCK = "corrections.json.lock"
 
@@ -39,7 +44,10 @@ def openai_call(input:str):
                     "7. Do not add any commentary, notes, or explanations. Return only the cleaned transcription.\n\n"
                     "INPUT: " + input + "\nOUTPUT:"
             ))
-        return response.output_text
+        if response.output_text:
+            return response.output_text
+        else:
+            return "Error with API Response"
 
     else:
         response = client.responses.create(
@@ -62,4 +70,7 @@ def openai_call(input:str):
                                                                                                                                                                                        "8. Do not add any commentary, notes, or explanations. Return only the cleaned transcription.\n\n"
                                                                                                                                                                                        "INPUT: " + input + "\nOUTPUT:"
             ))
-        return response.output_text
+        if response.output_text:
+            return response.output_text
+        else:
+            return "Error with API Response"
