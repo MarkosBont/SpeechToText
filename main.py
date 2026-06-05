@@ -150,7 +150,9 @@ if st.session_state.last_status is not None:
     polished = st.session_state.last_polished
 
     if status == "ok":
-        st.code(polished, language=None, wrap_lines=True)
+        line_count = polished.count('\n') + 1
+        height = max(100, line_count * 25)
+        st.text_area(label="", value=polished, height=height)
         st.download_button(
             "⬇ Download .txt",
             data=polished,
