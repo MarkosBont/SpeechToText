@@ -56,7 +56,7 @@ def transcribe(audio_bytes: bytes, progress_bar, status_text):
         status_text.markdown("**⚙ Προετοιμασία αρχείου…**")
         current = advance_progress(progress_bar, current, 10)
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
             tmp.write(audio_bytes)
             tmp_path = tmp.name
 
@@ -121,9 +121,9 @@ if len(audio) > 0:
     if duration != st.session_state.prev_duration:
         st.session_state.prev_duration = duration
 
-        wav_buffer  = audio.export(format="wav")
+        wav_buffer = audio.export(format="mp3")
         audio_bytes = wav_buffer.read()
-        st.audio(audio_bytes, format="audio/wav")
+        st.audio(audio_bytes, format="audio/mp3")
 
         progress_bar = st.progress(0)
         status_text  = st.empty()
