@@ -1,5 +1,5 @@
 streamlit>=1.35.0
-SpeechRecognition>=3.10.0
-audio-recorder-streamlit>=0.0.10
+streamlit-audiorecorder
 python-dotenv
 supabase
+openai
