@@ -24,7 +24,7 @@ def openai_call(input:str):
 
     if corrections_str == "{}":
         response = client.responses.create(
-            model="gpt-5.4",
+            model="gpt-5.0",
             input=(
                 "You are a medical transcription assistant for a Greek doctor's office. Follow these rules strictly:\n\n"
                 "1. The entire output must be in Greek. Output English words ONLY if they are common medical terms.\n"
@@ -51,7 +51,7 @@ def openai_call(input:str):
 
     else:
         response = client.responses.create(
-            model="gpt-5.4",
+            model="gpt-5.0",
             input=(
                     "You are a medical transcription assistant for a Greek doctor's office. Follow these rules strictly:\n\n"
                     "1. Always output the words: ευρήματα and συμπέρασμα in this format: **Ευρήματα:** and **Συμπέρασμα:**.\n"
