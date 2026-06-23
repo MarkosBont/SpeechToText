@@ -66,6 +66,7 @@ def openai_call(input: str) -> str:
         response = client.responses.create(
             model="gpt-5.5",
             input=prompt,
+            max_output_tokens=10000
         )
     except Exception as e:
         return f"API error: {e}"
