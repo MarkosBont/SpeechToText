@@ -36,14 +36,18 @@ if "last_polished" not in st.session_state:
     st.session_state.last_polished = ""
 if "base_polished" not in st.session_state:
     st.session_state.base_polished = ""
-if "prev_duration_main" not in st.session_state:
-    st.session_state.prev_duration_main = 0
-if "prev_duration_add" not in st.session_state:
-    st.session_state.prev_duration_add = 0
+if "last_audio_bytes" not in st.session_state:
+    st.session_state.last_audio_bytes = None
 if "correction_msg" not in st.session_state:
     st.session_state.correction_msg = None
 if "input_key" not in st.session_state:
     st.session_state.input_key = 0
+if "main_recorder_key" not in st.session_state:
+    st.session_state.main_recorder_key = 0
+if "vocal_recorder_key" not in st.session_state:
+    st.session_state.vocal_recorder_key = 0
+if "vocal_msg" not in st.session_state:
+    st.session_state.vocal_msg = None
 
 # ── Progress helper ───────────────────────────────────────────────────────────
 def advance_progress(progress_bar, current: int, target: int, step_delay: float = 0.02):
@@ -144,40 +148,45 @@ def center_recorders():
 st.markdown("<h1 style='text-align: center;'>Medical Transcription</h1>", unsafe_allow_html=True)
 st.divider()
 
-# ── Recorder ──────────────────────────────────────────────────────────────────
-audio = audiorecorder("", "", "", show_visualizer=True, key="recorder")
+st.subheader('Main Recording')
+# ── Main recorder ─────────────────────────────────────────────────────────────
+audio = audiorecorder(
+    "", "", "",
+    show_visualizer=True,
+    key=f"recorder_{st.session_state.main_recorder_key}",
+)
 center_recorders()
 
-st.divider()
+
 
 if len(audio) > 0:
-    duration = audio.duration_seconds
-    if duration != st.session_state.prev_duration_main:
-        st.session_state.prev_duration_main = duration
+    wav_buffer = audio.export(format="mp3")
+    audio_bytes = wav_buffer.read()
+    st.session_state.last_audio_bytes = audio_bytes
 
-        wav_buffer = audio.export(format="mp3")
-        audio_bytes = wav_buffer.read()
-        st.audio(audio_bytes, format="audio/mp3")
+    progress_bar = st.progress(0)
+    status_text  = st.empty()
 
-        progress_bar = st.progress(0)
-        status_text  = st.empty()
+    transcript, status, current = transcribe(audio_bytes, progress_bar, status_text)
+    st.session_state.last_transcript = transcript
+    st.session_state.last_status     = status
+    st.session_state.vocal_msg       = None   # new transcription clears stale addition msg
 
-        transcript, status, current = transcribe(audio_bytes, progress_bar, status_text)
-        st.session_state.last_transcript = transcript
-        st.session_state.last_status     = status
-
-        if status != "error":
-            polished_transcript, current = polish(transcript, progress_bar, status_text, current)
-            st.session_state.last_polished = polished_transcript
-            st.session_state.base_polished = polished_transcript   # un-merged baseline for additions
-            advance_progress(progress_bar, current, 100)
-            status_text.markdown("**Έτοιμο!**")
-        else:
-            st.session_state.last_polished = transcript
-
+    if status != "error":
+        polished_transcript, current = polish(transcript, progress_bar, status_text, current)
+        st.session_state.last_polished = polished_transcript
+        st.session_state.base_polished = polished_transcript   # un-merged baseline for additions
+        advance_progress(progress_bar, current, 100)
+        status_text.markdown("**Έτοιμο!**")
     else:
-        wav_buffer = audio.export(format="wav")
-        st.audio(wav_buffer.read(), format="audio/wav")
+        st.session_state.last_polished = transcript
+
+    # consume this recording: refresh the main recorder so it can't reprocess,
+    # and refresh the vocal recorder so the new transcription gets a clean,
+    # empty addition recorder (mic shows, no stale state).
+    st.session_state.main_recorder_key  += 1
+    st.session_state.vocal_recorder_key += 1
+    st.rerun()
 
 if st.session_state.last_status is not None:
     st.divider()
@@ -185,6 +194,9 @@ if st.session_state.last_status is not None:
     polished = st.session_state.last_polished
 
     if status == "ok":
+        if st.session_state.last_audio_bytes:
+            st.audio(st.session_state.last_audio_bytes, format="audio/mp3")
+
         st.markdown(polished)
         st.download_button(
             "⬇ Download .txt",
@@ -197,55 +209,45 @@ if st.session_state.last_status is not None:
         # ── Vocal addition ───────────────────────────────────────────────────
         st.subheader("Vocal Addition")
 
-        audio_addition = audiorecorder("", "", "", show_visualizer=True, key="vocal_recorder")
+        audio_addition = audiorecorder(
+            "", "", "",
+            show_visualizer=True,
+            key=f"vocal_recorder_{st.session_state.vocal_recorder_key}",
+        )
         center_recorders()
 
         if len(audio_addition) > 0:
-            duration = audio_addition.duration_seconds
-            if duration != st.session_state.prev_duration_add:
-                st.session_state.prev_duration_add = duration
+            wav_buffer = audio_addition.export(format="mp3")
+            audio_bytes = wav_buffer.read()
 
-                wav_buffer = audio_addition.export(format="mp3")
-                audio_bytes = wav_buffer.read()
-                st.audio(audio_bytes, format="audio/mp3")
+            progress_bar = st.progress(0)
+            status_text = st.empty()
 
-                progress_bar = st.progress(0)
-                status_text = st.empty()
+            addition_transcript, add_status, current = transcribe(audio_bytes, progress_bar, status_text)
 
-                addition_transcript, status, current = transcribe(audio_bytes, progress_bar, status_text)
-                st.session_state.last_transcript = addition_transcript
-                st.session_state.last_status = status
-
-                if status != "error":
-                    transcript_with_addition, current = vocal_addition(
-                        st.session_state.base_polished, addition_transcript,
-                        progress_bar, status_text, current
-                    )
-                    st.session_state.last_polished = transcript_with_addition
-                    advance_progress(progress_bar, current, 100)
-                    status_text.markdown("**Έτοιμο!**")
-                else:
-                    st.session_state.last_polished = addition_transcript
-
+            if add_status == "ok":
+                transcript_with_addition, current = vocal_addition(
+                    st.session_state.base_polished, addition_transcript,
+                    progress_bar, status_text, current
+                )
+                st.session_state.last_polished = transcript_with_addition
+                advance_progress(progress_bar, current, 100)
+                status_text.markdown("**Έτοιμο!**")
+            elif add_status == "unknown":
+                st.session_state.vocal_msg = ("warning", addition_transcript)
             else:
-                wav_buffer = audio_addition.export(format="wav")
-                st.audio(wav_buffer.read(), format="audio/wav")
+                st.session_state.vocal_msg = ("error", addition_transcript)
 
-            if st.session_state.last_status is not None:
-                st.divider()
-                status = st.session_state.last_status
+            # consume this recording: recreate the recorder empty so it can't be
+            # reprocessed and is ready for the next addition
+            st.session_state.vocal_recorder_key += 1
+            st.rerun()
 
-                if status == "ok":
-                    st.markdown(st.session_state.last_polished)
-                    st.download_button(
-                        "⬇ Download .txt",
-                        data=st.session_state.last_polished,
-                        file_name=f"transcript_{datetime.now().strftime('%H%M%S')}.txt",
-                        mime="text/plain",
-                        key="download_addition",
-                    )
+        if st.session_state.vocal_msg:
+            kind, text = st.session_state.vocal_msg
+            getattr(st, kind)(text)
+            st.session_state.vocal_msg = None
 
-                st.divider()
 
     elif status == "unknown":
         st.warning(polished)
