@@ -9,7 +9,6 @@ from call import openai_call
 from openai import OpenAI
 from dotenv import load_dotenv
 import streamlit.components.v1 as components
-import html
 
 load_dotenv()
 
@@ -107,16 +106,39 @@ btn_style = {
     "color": "#0f172a",
 }
 
-audio = audiorecorder(
-    start_prompt="⏺  Start",
-    pause_prompt="⏸  Pause",
-    stop_prompt="⏹  Stop",
-    start_style={**btn_style, "backgroundColor": "#10a103", "color": "#ffffff", "border": "1px solid #0f172a"},
-    pause_style={**btn_style, "backgroundColor": "#e07604", "color": "#ffffff", "border": "1px solid #0f172a"},
-    stop_style={**btn_style, "backgroundColor": "#c21104", "color": "#ffffff", "border": "1px solid #0f172a"},
-    show_visualizer=True,
-    key="recorder",
+audio = audiorecorder("", "", "", show_visualizer=True, key="recorder")
+
+import streamlit.components.v1 as components
+
+components.html(
+    """
+    <script>
+    const doc = window.parent.document;
+    const apply = () => {
+        const f = [...doc.querySelectorAll('iframe')]
+            .find(f => (f.title||'').toLowerCase().includes('audiorecorder'));
+        if (!f) return;
+        f.style.width = '100%';          // give the 0-width iframe room
+        f.style.display = 'block';
+        try {                             // same-origin: reach inside and center
+            const d = f.contentDocument;
+            if (d && d.body) {
+                d.body.style.margin = '0';
+                d.body.style.display = 'flex';
+                d.body.style.justifyContent = 'center';
+                d.body.style.width = '100%';
+            }
+        } catch (e) {}
+    };
+    apply();
+    let n = 0;
+    const t = setInterval(() => { apply(); if (++n > 15) clearInterval(t); }, 300);
+    </script>
+    """,
+    height=0,
 )
+
+st.divider()
 
 if len(audio) > 0:
     duration = audio.duration_seconds
@@ -166,7 +188,7 @@ if st.session_state.last_status is not None:
     else:
         st.error(polished)
 
-st.divider()
+
 # ── Corrections manager ───────────────────────────────────────────────────────
 corrections = load_corrections()
 
