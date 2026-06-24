@@ -80,3 +80,30 @@ def openai_call(input: str) -> str:
         return response.output_text
 
     return "Empty output — model returned no text (possible refusal or reasoning-only response)"
+
+def openai_call_vocal_addition(transcript: str, addition: str) -> str:
+
+    corrections = load_corrections()
+    prompt = ("You are given a medical transcription in Greek. "
+              "You will be also given an addition to make to this transcription. "
+              "Your job is to return the complete transcription which includes the addition."
+              "The addition will specify what text to add, and where to add it. \n + TRANSCRIPTION: " + transcript + "\n" + "ADDITION: " + addition)
+
+    try:
+        response = client.responses.create(
+            model="gpt-5.5",
+            input=prompt,
+            max_output_tokens=10000
+        )
+    except Exception as e:
+        return f"API error: {e}"
+
+    if getattr(response, "status", None) == "incomplete":
+        details = getattr(response, "incomplete_details", None)
+        reason = getattr(details, "reason", "unknown") if details else "unknown"
+        return f"Incomplete response: {reason}"
+
+    if response.output_text:
+        return response.output_text
+
+    return "Empty output — model returned no text (possible refusal or reasoning-only response)"
