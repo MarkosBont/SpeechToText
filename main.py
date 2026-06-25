@@ -148,7 +148,7 @@ def center_recorders():
 st.markdown("<h1 style='text-align: center;'>Medical Transcription</h1>", unsafe_allow_html=True)
 st.divider()
 
-st.subheader('Main Recording')
+st.subheader(":green[Main Recording]")
 # ── Main recorder ─────────────────────────────────────────────────────────────
 audio = audiorecorder(
     "", "", "",
@@ -207,7 +207,7 @@ if st.session_state.last_status is not None:
         )
 
         # ── Vocal addition ───────────────────────────────────────────────────
-        st.subheader("Vocal Addition")
+        st.subheader(":blue[Vocal Addition]")
 
         audio_addition = audiorecorder(
             "", "", "",
