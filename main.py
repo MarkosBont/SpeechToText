@@ -25,6 +25,9 @@ def save_correction(wrong: str, correct: str):
 def delete_correction(wrong: str):
     supabase.table("Corrections").delete().eq("wrong", wrong).execute()
 
+def save_transcriptions(whisper_transcript, polished_transcript):
+    supabase.table("transcriptions").upsert({"whisper_transcript": whisper_transcript, "polished_transcript": polished_transcript}).execute()
+
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(page_title="Speech to Text", page_icon="🎙️", layout="centered")
 
@@ -176,6 +179,8 @@ if len(audio) > 0:
         polished_transcript, current = polish(transcript, progress_bar, status_text, current)
         st.session_state.last_polished = polished_transcript
         st.session_state.base_polished = polished_transcript   # un-merged baseline for additions
+        save_transcriptions(transcript, polished_transcript)
+        status_text.markdown("**Saving to database...")
         advance_progress(progress_bar, current, 100)
         status_text.markdown("**Έτοιμο!**")
     else:
@@ -272,7 +277,6 @@ if col_c.button("Add"):
     else:
         st.warning("Both fields must be filled.")
 
-#st.divider()
 
 with st.expander("Existing Corrections"):
     if corrections:

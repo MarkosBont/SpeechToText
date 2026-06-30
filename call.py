@@ -50,7 +50,7 @@ def build_prompt(input_text: str, corrections: dict) -> str:
         "to the most recent occurrence of X in the text.\n"
         "11. Keep ALL sentences with medical content. DELETE any sentences or parts of "
         "sentences unrelated to medicine (e.g., if the doctor picks up the phone).\n"
-        "IMPORTANT: Do not add any commentary, notes, or explanations. "
+        "IMPORTANT: Do not add any commentary, notes, or explanations. Do not change any words for synonyms you may think fit better "
         "Return only the cleaned transcription.\n\n"
         "INPUT: " + input_text + "\nOUTPUT:"
     )
