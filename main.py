@@ -238,8 +238,7 @@ if st.session_state.last_status is not None:
             else:
                 st.session_state.vocal_msg = ("error", addition_transcript)
 
-            # consume this recording: recreate the recorder empty so it can't be
-            # reprocessed and is ready for the next addition
+            # recreate the recorder empty so it can't be reprocessed and is ready for the next addition
             st.session_state.vocal_recorder_key += 1
             st.rerun()
 
@@ -258,7 +257,8 @@ if st.session_state.last_status is not None:
 # ── Corrections manager ───────────────────────────────────────────────────────
 corrections = load_corrections()
 
-st.subheader("Add a Correction")
+st.divider()
+st.markdown("Add a Correction")
 col_a, col_b, col_c = st.columns([2, 2, 1])
 wrong_word   = col_a.text_input("Wrong word",   key=f"new_wrong_{st.session_state.input_key}",   label_visibility="collapsed", placeholder="Wrong word")
 correct_word = col_b.text_input("Correct word", key=f"new_correct_{st.session_state.input_key}", label_visibility="collapsed", placeholder="Correct word")
@@ -272,23 +272,23 @@ if col_c.button("Add"):
     else:
         st.warning("Both fields must be filled.")
 
-st.divider()
+#st.divider()
 
-st.subheader("Existing Corrections")
-if corrections:
-    col_h1, col_h2, col_h3 = st.columns([2, 2, 1])
-    col_h1.markdown("**Wrong**")
-    col_h2.markdown("**Correct**")
-    for wrong, correct in list(corrections.items()):
-        c1, c2, c3 = st.columns([2, 2, 1])
-        c1.write(wrong)
-        c2.write(correct)
-        if c3.button("DELETE", key=f"del_{wrong}"):
-            delete_correction(wrong)
-            st.session_state.correction_msg = f"Removed: '{wrong}'"
-            st.rerun()
-else:
-    st.info("No corrections saved.")
+with st.expander("Existing Corrections"):
+    if corrections:
+        col_h1, col_h2, col_h3 = st.columns([2, 2, 1])
+        col_h1.markdown("**Wrong**")
+        col_h2.markdown("**Correct**")
+        for wrong, correct in list(corrections.items()):
+            c1, c2, c3 = st.columns([2, 2, 1])
+            c1.write(wrong)
+            c2.write(correct)
+            if c3.button("DELETE", key=f"del_{wrong}"):
+                delete_correction(wrong)
+                st.session_state.correction_msg = f"Removed: '{wrong}'"
+                st.rerun()
+    else:
+        st.info("No corrections saved.")
 
 if st.session_state.correction_msg:
     st.success(st.session_state.correction_msg)
