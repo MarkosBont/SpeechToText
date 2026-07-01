@@ -192,7 +192,7 @@ audio = strip_long_silences(audio)
 
 if len(audio) > 0:
     original_bytes = audio.export(format="mp3").read()
-    st.session_state.original_audio_bytes = original_bytes
+    st.session_state.last_audio_bytes = original_bytes
 
     # stripped — this is what goes to Whisper AND what you store as last_audio_bytes
     stripped = strip_long_silences(audio)
@@ -231,7 +231,7 @@ if st.session_state.last_status is not None:
 
     if status == "ok":
         if st.session_state.last_audio_bytes:
-            st.audio(st.session_state.original_audio_bytes, format="audio/mp3")
+            st.audio(st.session_state.last_audio_bytes, format="audio/mp3")
 
         st.markdown(polished)
         st.download_button(
