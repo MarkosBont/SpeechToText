@@ -22,11 +22,23 @@ def load_corrections() -> dict:
 def save_correction(wrong: str, correct: str):
     supabase.table("Corrections").upsert({"wrong": wrong, "correct": correct}).execute()
 
+
 def delete_correction(wrong: str):
     supabase.table("Corrections").delete().eq("wrong", wrong).execute()
 
 def save_transcriptions(whisper_transcript, polished_transcript):
     supabase.table("transcriptions").upsert({"whisper_transcript": whisper_transcript, "polished_transcript": polished_transcript}).execute()
+
+def save_addition(addition_transcript, polished_transcript):
+    supabase.table("transcriptions").upsert({"whisper_transcript": addition_transcript, "polished_transcript": polished_transcript, "vocal_addition": True}).execute()
+
+def latest_polished():
+    resp = (supabase.table("transcriptions")
+            .select("polished_transcript")
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute())
+    return resp.data[0]["polished_transcript"] if resp.data else ""
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(page_title="Speech to Text", page_icon="🎙️", layout="centered")
@@ -195,7 +207,7 @@ if len(audio) > 0:
 if st.session_state.last_status is not None:
     st.divider()
     status   = st.session_state.last_status
-    polished = st.session_state.last_polished
+    polished = latest_polished()
 
     if status == "ok":
         if st.session_state.last_audio_bytes:
@@ -234,7 +246,8 @@ if st.session_state.last_status is not None:
                     st.session_state.base_polished, addition_transcript,
                     progress_bar, status_text, current
                 )
-                st.session_state.last_polished = transcript_with_addition
+                save_addition(addition_transcript, transcript_with_addition)
+
                 advance_progress(progress_bar, current, 100)
                 status_text.markdown("**Έτοιμο!**")
             elif add_status == "unknown":
@@ -244,6 +257,7 @@ if st.session_state.last_status is not None:
 
             st.session_state.vocal_recorder_key += 1
             st.rerun()
+
 
         if st.session_state.vocal_msg:
             kind, text = st.session_state.vocal_msg
