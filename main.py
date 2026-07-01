@@ -9,6 +9,8 @@ from call import openai_call, openai_call_vocal_addition
 from openai import OpenAI
 from dotenv import load_dotenv
 import streamlit.components.v1 as components
+from pydub.silence import detect_nonsilent
+from pydub import AudioSegment
 
 load_dotenv()
 
@@ -39,6 +41,21 @@ def latest_polished():
             .limit(1)
             .execute())
     return resp.data[0]["polished_transcript"] if resp.data else ""
+
+
+# ── Detecting silence ───────────────────────────────────────────────────────────────
+def strip_long_silences(seg: AudioSegment,
+                        min_silence_ms: int = 2000,   # only collapse pauses longer than this
+                        silence_thresh_db: int = -40, # what counts as "silence" (dBFS)
+                        keep_ms: int = 300):          # padding kept around speech so words don't clip
+    spans = detect_nonsilent(seg, min_silence_len=min_silence_ms, silence_thresh=silence_thresh_db)
+    if not spans:
+        return seg
+    out = AudioSegment.empty()
+    for start, end in spans:
+        out += seg[max(0, start - keep_ms): min(len(seg), end + keep_ms)]
+    return out
+
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(page_title="Speech to Text", page_icon="🎙️", layout="centered")
@@ -171,13 +188,16 @@ audio = audiorecorder(
     key=f"recorder_{st.session_state.main_recorder_key}",
 )
 center_recorders()
-
-
+audio = strip_long_silences(audio)
 
 if len(audio) > 0:
-    wav_buffer = audio.export(format="mp3")
-    audio_bytes = wav_buffer.read()
-    st.session_state.last_audio_bytes = audio_bytes
+    original_bytes = audio.export(format="mp3").read()
+    st.session_state.original_audio_bytes = original_bytes
+
+    # stripped — this is what goes to Whisper AND what you store as last_audio_bytes
+    stripped = strip_long_silences(audio)
+    audio_bytes = stripped.export(format="mp3").read()   # ← note: named audio_bytes
+    st.session_state.last_audio_bytes = audio_bytes       # stripped
 
     progress_bar = st.progress(0)
     status_text  = st.empty()
@@ -211,7 +231,7 @@ if st.session_state.last_status is not None:
 
     if status == "ok":
         if st.session_state.last_audio_bytes:
-            st.audio(st.session_state.last_audio_bytes, format="audio/mp3")
+            st.audio(st.session_state.original_audio_bytes, format="audio/mp3")
 
         st.markdown(polished)
         st.download_button(
