@@ -190,7 +190,6 @@ if len(audio) > 0:
     # and refresh the vocal recorder so the new transcription gets a clean,
     # empty addition recorder (mic shows, no stale state).
     st.session_state.main_recorder_key  += 1
-    st.session_state.vocal_recorder_key += 1
     st.rerun()
 
 if st.session_state.last_status is not None:
@@ -243,6 +242,7 @@ if st.session_state.last_status is not None:
             else:
                 st.session_state.vocal_msg = ("error", addition_transcript)
 
+            st.session_state.vocal_recorder_key += 1
             st.rerun()
 
         if st.session_state.vocal_msg:
