@@ -48,7 +48,7 @@ def strip_long_silences(seg: AudioSegment,
                         min_silence_ms: int = 2000,   # only collapse pauses longer than this
                         silence_thresh_db: int = -40, # what counts as "silence" (dBFS)
                         keep_ms: int = 300):          # padding kept around speech so words don't clip
-    spans = detect_nonsilent(seg, min_silence_len=min_silence_ms, silence_thresh=silence_thresh_db)
+    spans = detect_nonsilent(seg, min_silence_len=min_silence_ms, silence_thresh=silence_thresh_db, seek_step=25)
     if not spans:
         return seg
     out = AudioSegment.empty()
