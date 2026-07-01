@@ -180,7 +180,7 @@ if len(audio) > 0:
         st.session_state.last_polished = polished_transcript
         st.session_state.base_polished = polished_transcript   # un-merged baseline for additions
         save_transcriptions(transcript, polished_transcript)
-        status_text.markdown("**Saving to database...")
+        status_text.markdown("**Saving to database...**")
         advance_progress(progress_bar, current, 100)
         status_text.markdown("**Έτοιμο!**")
     else:
