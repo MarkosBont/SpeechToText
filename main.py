@@ -243,8 +243,6 @@ if st.session_state.last_status is not None:
             else:
                 st.session_state.vocal_msg = ("error", addition_transcript)
 
-            # recreate the recorder empty so it can't be reprocessed and is ready for the next addition
-            st.session_state.vocal_recorder_key += 1
             st.rerun()
 
         if st.session_state.vocal_msg:
