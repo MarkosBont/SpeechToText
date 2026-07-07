@@ -49,7 +49,7 @@ def build_prompt(input_text: str, corrections: dict) -> str:
         "to the most recent occurrence of X in the text.\n"
         "11. Keep ALL sentences with medical content. DELETE any sentences or parts of "
         "sentences unrelated to medicine (e.g., if the doctor picks up the phone).\n"
-        "12. At the END of the transcription, add the doctor's signature exactly as written:\n"
+        "12. At the END of the transcription, IF the doctor says 'υπογραφή', add the doctor's signature exactly as written:\n"
         "ΝΙΚΟΣ Π. ΜΠΟΝΤΟΖΟΓΛΟΥ  \nΔ/ντής Τμήματος Αξονικής  \n& Μαγνητικής Τομογραφίας  \n10095502455\n"
         "13. IMPORTANT: Do not add any commentary, notes, or explanations. Do not change any words for synonyms you may think fit better \n"
         "14. Return only the cleaned transcription.\n\n"
