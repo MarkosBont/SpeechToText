@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 import streamlit.components.v1 as components
 from pydub.silence import detect_nonsilent
 from pydub import AudioSegment
+from streamlit_autorefresh import st_autorefresh
 
 load_dotenv()
 
@@ -59,6 +60,8 @@ def strip_long_silences(seg: AudioSegment,
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(page_title="Speech to Text", page_icon="🎙️", layout="centered")
+
+st_autorefresh(interval=60_000, key="keepalive")   # ping every 60s
 
 if "last_transcript" not in st.session_state:
     st.session_state.last_transcript = ""
