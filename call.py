@@ -68,10 +68,12 @@ def openai_call(input: str) -> str:
         response = client.responses.create(
             model="gpt-5.5",
             input=prompt,
+            reasoning={"effort": "none"},
             max_output_tokens=10000
         )
     except Exception as e:
         return f"API error: {e}"
+
 
     if getattr(response, "status", None) == "incomplete":
         details = getattr(response, "incomplete_details", None)
@@ -79,6 +81,7 @@ def openai_call(input: str) -> str:
         return f"Incomplete response: {reason}"
 
     if response.output_text:
+        print(response.usage.output_tokens_details.reasoning_tokens)
         return response.output_text
 
     return "Empty output — model returned no text (possible refusal or reasoning-only response)"
