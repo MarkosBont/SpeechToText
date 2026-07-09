@@ -15,29 +15,35 @@ from streamlit_autorefresh import st_autorefresh
 
 load_dotenv()
 
+# ── Auth ──────────────────────────────────────────────────────────────────
+def login_screen():
+    st.markdown("<h1 style='text-align: center;'>Medical Transcription</h1>", unsafe_allow_html=True)
+    st.button("Log in with Google", on_click=st.login)
+
+
 # ── Supabase ──────────────────────────────────────────────────────────────────
 supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_API_KEY"))
 
 def load_corrections() -> dict:
-    response = supabase.table("Corrections").select("wrong, correct").execute()
+    response = supabase.table("Corrections").select("wrong, correct").eq("user_id", user_id).execute()
     return {row["wrong"]: row["correct"] for row in response.data}
 
 def save_correction(wrong: str, correct: str):
-    supabase.table("Corrections").upsert({"wrong": wrong, "correct": correct}).execute()
-
+    supabase.table("Corrections").insert({"user_id": user_id, "wrong": wrong, "correct": correct}).execute()
 
 def delete_correction(wrong: str):
-    supabase.table("Corrections").delete().eq("wrong", wrong).execute()
+    supabase.table("Corrections").delete().eq("user_id", user_id).eq("wrong", wrong).execute()
 
 def save_transcriptions(whisper_transcript, polished_transcript):
-    supabase.table("transcriptions").upsert({"whisper_transcript": whisper_transcript, "polished_transcript": polished_transcript}).execute()
+    supabase.table("transcriptions").insert({"user_id":user_id, "whisper_transcript": whisper_transcript, "polished_transcript": polished_transcript}).execute()
 
 def save_addition(addition_transcript, polished_transcript):
-    supabase.table("transcriptions").upsert({"whisper_transcript": addition_transcript, "polished_transcript": polished_transcript, "vocal_addition": True}).execute()
+    supabase.table("transcriptions").insert({"user_id":user_id, "whisper_transcript": addition_transcript, "polished_transcript": polished_transcript, "vocal_addition": True}).execute()
 
 def latest_polished():
     resp = (supabase.table("transcriptions")
             .select("polished_transcript")
+            .eq("user_id", user_id)
             .order("created_at", desc=True)
             .limit(1)
             .execute())
@@ -60,8 +66,6 @@ def strip_long_silences(seg: AudioSegment,
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(page_title="Speech to Text", page_icon="🎙️", layout="centered")
-
-st_autorefresh(interval=60_000, key="keepalive")   # ping every 60s
 
 if "last_transcript" not in st.session_state:
     st.session_state.last_transcript = ""
@@ -180,6 +184,13 @@ def center_recorders():
     )
 
 # ── UI ────────────────────────────────────────────────────────────────────────
+if not st.user.is_logged_in:
+    login_screen()
+    st.stop()
+
+st_autorefresh(interval=60_000, key="keepalive")   # ping every 60s
+user_id = st.user["sub"]
+
 st.markdown("<h1 style='text-align: center;'>Medical Transcription</h1>", unsafe_allow_html=True)
 st.divider()
 
@@ -191,7 +202,6 @@ audio = audiorecorder(
     key=f"recorder_{st.session_state.main_recorder_key}",
 )
 center_recorders()
-audio = strip_long_silences(audio)
 
 if len(audio) > 0:
     original_bytes = audio.export(format="mp3").read()
@@ -332,3 +342,5 @@ with st.expander("Existing Corrections"):
 if st.session_state.correction_msg:
     st.success(st.session_state.correction_msg)
     st.session_state.correction_msg = None
+
+st.button("Logout", on_click=st.logout)
