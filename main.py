@@ -11,7 +11,6 @@ from dotenv import load_dotenv
 import streamlit.components.v1 as components
 from pydub.silence import detect_nonsilent
 from pydub import AudioSegment
-from streamlit_autorefresh import st_autorefresh
 
 load_dotenv()
 
@@ -208,7 +207,6 @@ if not st.user.is_logged_in:
     login_screen()
     st.stop()
 
-st_autorefresh(interval=60_000, key="keepalive")   # ping every 60s
 user_id = st.user["sub"]
 
 st.markdown("<h1 style='text-align: center;'>Medical Transcription</h1>", unsafe_allow_html=True)

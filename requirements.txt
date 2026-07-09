@@ -3,5 +3,4 @@ streamlit-audiorecorder
 python-dotenv
 supabase
 openai
-streamlit-autorefresh
 authlib
