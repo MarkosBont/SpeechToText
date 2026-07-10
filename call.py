@@ -39,7 +39,7 @@ def build_prompt(input_text: str, corrections: dict) -> str:
         '6. Replace "Τεχνική" with "**Τεχνική:**" followed by a new paragraph.\n'
         "7. Only when dates are said, add the dates in the form of DD/MM/YYYY.\n"
         "8. If the doctor says a formatting command in Greek, apply it instead of transcribing it:\n"
-        "   - 'καρπούζι' → start a new paragraph\n"
+        "   - 'Σπέις/space' → start a new paragraph\n"
         "   - 'τελεία' → insert a period (.)\n"
         "   - 'παύλα' → insert a dash (-)\n"
         "   - 'εισαγωγικά' → insert opening quotation marks («)\n"
