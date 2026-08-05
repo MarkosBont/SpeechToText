@@ -4,3 +4,4 @@ python-dotenv
 supabase
 openai
 authlib
+starlette<0.49
