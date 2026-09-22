@@ -35,7 +35,7 @@ def transcribe_audio(audio_bytes: bytes) -> tuple[str, str]:
 
         with open(tmp_path, "rb") as audio_file:
             result = client.audio.transcriptions.create(
-                model="whisper-1",
+                model="gpt-transcribe",
                 file=audio_file,
                 language="el",
             )
