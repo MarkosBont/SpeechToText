@@ -8,7 +8,7 @@ from prompts import build_polish_prompt, build_vocal_addition_prompt
 def _run_completion(prompt: str, **extra) -> str:
     try:
         response = client.responses.create(
-            model="gpt-5.5",
+            model="gpt-5.6",
             input=prompt,
             max_output_tokens=10000,
             **extra,
